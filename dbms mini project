@@ -1,0 +1,109 @@
+CREATE DATABASE LibraryDB;
+USE LibraryDB;
+
+-- Books table
+CREATE TABLE Books (
+    BookID INT PRIMARY KEY AUTO_INCREMENT,
+    Title VARCHAR(100) NOT NULL,
+    Author VARCHAR(100),
+    Publisher VARCHAR(100),
+    Quantity INT NOT NULL DEFAULT 1
+);
+
+-- Students table
+CREATE TABLE Students (
+    StudentID INT PRIMARY KEY AUTO_INCREMENT,
+    StudentName VARCHAR(100) NOT NULL,
+    RollNo VARCHAR(20) UNIQUE,
+    Department VARCHAR(50)
+);
+
+-- Issue and Return table
+CREATE TABLE BookIssues (
+    IssueID INT PRIMARY KEY AUTO_INCREMENT,
+    BookID INT NOT NULL,
+    StudentID INT NOT NULL,
+    IssueDate DATE NOT NULL,
+    ReturnDate DATE,
+    Status VARCHAR(20) DEFAULT 'Issued',
+    FOREIGN KEY (BookID) REFERENCES Books(BookID),
+    FOREIGN KEY (StudentID) REFERENCES Students(StudentID)
+);
+INSERT INTO Books (Title, Author, Publisher, Quantity)
+VALUES
+('C Programming', 'Dennis Ritchie', 'PHI', 5),
+('Database System Concepts', 'Silberschatz', 'McGraw Hill', 3),
+('Computer Networks', 'Andrew Tanenbaum', 'Pearson', 4);
+
+INSERT INTO Students (StudentName, RollNo, Department)
+VALUES
+('Rahul Sharma', '101', 'BCA'),
+('Aman Singh', '102', 'BCA');
+
+SELECT * FROM Books;
+
+SELECT *
+FROM Books
+WHERE Title LIKE '%Database%';
+
+START TRANSACTION;
+
+UPDATE Books
+SET Quantity = Quantity - 1
+WHERE BookID = 1 AND Quantity > 0;
+
+SET @book_issued = ROW_COUNT();
+
+INSERT INTO BookIssues
+    (BookID, StudentID, IssueDate, Status)
+SELECT 1, 1, CURDATE(), 'Issued'
+
+
+WHERE @book_issued = 1;
+
+COMMIT;
+
+SELECT
+    Students.StudentName,
+    Books.Title,
+    BookIssues.IssueDate,
+    BookIssues.ReturnDate,
+    BookIssues.Status
+FROM BookIssues
+JOIN Students
+    ON BookIssues.StudentID = Students.StudentID
+JOIN Books
+    ON BookIssues.BookID = Books.BookID;
+
+START TRANSACTION;
+
+UPDATE BookIssues
+SET Status = 'Returned',
+    ReturnDate = CURDATE()
+WHERE IssueID = 1 AND Status = 'Issued';
+
+SET @was_returned = ROW_COUNT();
+
+UPDATE Books
+SET Quantity = Quantity + 1
+WHERE BookID = (
+    SELECT BookID
+    FROM BookIssues
+    WHERE IssueID = 1
+) AND @was_returned = 1;
+
+COMMIT;
+
+
+SELECT *
+FROM Books
+WHERE Quantity > 0;
+
+SELECT
+    COUNT(*) AS TotalBookTitles,
+    SUM(Quantity) AS AvailableCopies
+FROM Books;
+
+
+DELETE FROM Books
+WHERE BookID = 3;
